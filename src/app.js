@@ -1,6 +1,8 @@
 const express = require('express');
 const connectDB = require('./config/database');
 const User = require('./models/user');
+const { validateSignupData } = require('./utils/validation');
+const bcrypt = require('bcrypt');
 const app = express();
 
 app.use(express.json());
@@ -38,8 +40,19 @@ app.get('/feed', async (req, res) => {
 });
 
 app.post('/signUp', async (req, res) => {
-  const user = new User(req.body);
   try {
+    const { firstName, lastName, emailId, password } = req.body;
+    const hashedpassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: hashedpassword,
+    });
+
+    validateSignupData(req);
+   
     await user.save();
     res.send('user added successfully');
   } catch (err) {
@@ -47,17 +60,49 @@ app.post('/signUp', async (req, res) => {
   }
 });
 
-app.patch('/user', async (req, res) => {
-  const userId = req.body.userId;
+app.post('/login', async (req, res) => {
+  try{
+    const { emailId, password } = req.body;
+    
+    const user = await User.findOne({emailId});
+    console.log(emailId,password,user.password)
+    if(!user){
+      throw new Error('Invalid credentials')
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if(isValidPassword){
+      res.send('login successful');
+    }else{
+      throw new Error('Invalid credentials')
+    }
+  } catch (err) {
+    res.status(400).send('Error saving user data:' + err.message);
+  }
+})
+
+app.patch('/user/:userId', async (req, res) => {
+  const userId = req.params?.userId;
   const data = req.body;
+
   try {
+    const ALLOWED_UPDATE = ['photoUrl', 'about', 'gender', 'age', 'skills'];
+    const isAllowed = Object.keys(data).every((k) =>
+      ALLOWED_UPDATE.includes(k),
+    );
+    if (!isAllowed) {
+      throw new Error('update not allowed!!');
+    }
+    if (data?.skills.length > 10) {
+      throw new Error('cannot add more than 10 skills');
+    }
     const user = await User.findByIdAndUpdate({ _id: userId }, data, {
       returnDocument: 'after',
-      runValidators: true
+      runValidators: true,
     });
     res.send('user updated successfully');
   } catch (err) {
-    res.status(400).send('Something went wrong!'+err.message);
+    res.status(400).send('Something went wrong!' + err.message);
   }
 });
 
