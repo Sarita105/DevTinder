@@ -8,7 +8,6 @@ const authUserMiddleware = async (req, res, next) => {
     if (!token) {
       throw new Error('Invalid token!!');
     }
-
     const { _id } = await jwt.verify(token, 'Dev@Tinder.777');
     const user = await User.findById(_id);
     if (!user) {

@@ -12,4 +12,19 @@ const validateSignupData = (req) => {
   }
 };
 
-module.exports = { validateSignupData };
+const validateUserData = (req) => {
+  const data = req.body;
+  const ALLOWED_UPDATE = [
+    'firstName',
+    'lastName',
+    'photoUrl',
+    'about',
+    'gender',
+    'age',
+    'skills',
+  ];
+  const isAllowed = Object.keys(data).every((k) => ALLOWED_UPDATE.includes(k));
+  return isAllowed;
+};
+
+module.exports = { validateSignupData, validateUserData };
