@@ -2,10 +2,13 @@ const express = require('express');
 const connectDB = require('./config/database');
 const User = require('./models/user');
 const { validateSignupData } = require('./utils/validation');
+const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const app = express();
-
+const { authUserMiddleware } = require('./middlewares/auth');
 app.use(express.json());
+app.use(cookieParser());
 
 app.get('/user', async (req, res) => {
   const userEmail = req.body.emailId;
@@ -52,7 +55,7 @@ app.post('/signUp', async (req, res) => {
     });
 
     validateSignupData(req);
-   
+
     await user.save();
     res.send('user added successfully');
   } catch (err) {
@@ -61,25 +64,38 @@ app.post('/signUp', async (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-  try{
+  try {
     const { emailId, password } = req.body;
-    
-    const user = await User.findOne({emailId});
-    console.log(emailId,password,user.password)
-    if(!user){
-      throw new Error('Invalid credentials')
+
+    const user = await User.findOne({ emailId });
+    if (!user) {
+      throw new Error('Invalid credentials');
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if(isValidPassword){
+    const isValidPassword =await user.validatePassword(password);
+
+    if (isValidPassword) {
+      const token = await user.getJWT();
+      res.cookie('token', token, {
+        expires: new Date(Date.now() + 8 * 3600000),
+      });
       res.send('login successful');
-    }else{
-      throw new Error('Invalid credentials')
+    } else {
+      throw new Error('Invalid credentials');
     }
   } catch (err) {
     res.status(400).send('Error saving user data:' + err.message);
   }
-})
+});
+
+app.get('/profile', authUserMiddleware, async (req, res) => {
+  try {
+    const user = req.user;
+    res.send(user);
+  } catch (err) {
+    res.status(400).send('Error saving user data:' + err.message);
+  }
+});
 
 app.patch('/user/:userId', async (req, res) => {
   const userId = req.params?.userId;
@@ -106,6 +122,14 @@ app.patch('/user/:userId', async (req, res) => {
   }
 });
 
+app.post(
+  '/sendConnectionRequest',
+  authUserMiddleware,
+  async (req, res, next) => {
+    const user = req.user;
+    res.send(user + 'has sent a request');
+  },
+);
 connectDB()
   .then(() => {
     console.log('database connected successfully.');

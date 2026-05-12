@@ -1,23 +1,25 @@
-const authMiddleware = (req, res, next) => {
-  console.log('auth middleware checking!!');
-  const token = 'xyz';
-  if (token === 'xyz') {
-    next();
-  } else {
-    res.status(401).send('unauthorized access!! Cant let you in!!');
-  }
-}
+const User = require('../models/user');
+const jwt = require('jsonwebtoken');
 
-const authUserMiddleware = (req, res, next) => {
-  console.log('auth middleware checking!!');
-  const token = 'xyz';
-  if (token === 'xyz') {
+const authUserMiddleware = async (req, res, next) => {
+  try {
+    const cookies = req.cookies;
+    const { token } = cookies;
+    if (!token) {
+      throw new Error('Invalid token!!');
+    }
+
+    const { _id } = await jwt.verify(token, 'Dev@Tinder.777');
+    const user = await User.findById(_id);
+    if (!user) {
+      throw new Error('please login again!!');
+    }
+    req.user = user;
     next();
-  } else {
-    res.status(401).send('unauthorized access!! Cant let you in!!');
+  } catch (err) {
+    res.status(400).send('Error logging in:' + err.message);
   }
-}
+};
 module.exports = {
-  authMiddleware,
-  authUserMiddleware
-}
+  authUserMiddleware,
+};
