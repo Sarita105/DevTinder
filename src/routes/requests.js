@@ -7,7 +7,7 @@ const requestRouter = express.Router();
 requestRouter.post(
   '/request/send/:status/:toUserId',
   authUserMiddleware,
-  async (req, res, next) => {
+  async (req, res) => {
     try {
       const toUserId = req.params.toUserId;
       const status = req.params.status;
@@ -54,4 +54,38 @@ requestRouter.post(
   },
 );
 
+requestRouter.post(
+  '/request/review/:status/:requestId',
+  authUserMiddleware,
+  async (req, res) => {
+    try {
+      const loggedinUser = req.user;
+      const { status, requestId } = req.params;
+      const allowedStatus = ['rejected', 'accepted'];
+      if (!allowedStatus.includes(status)) {
+        return res.status(400).json({
+          message: 'invalid request status',
+        });
+      }
+      const connectionRequest = await ConnectionRequest.findOne({
+        _id: requestId,
+        toUserId: loggedinUser,
+        status: 'interested',
+      });
+      if (!connectionRequest) {
+        res.status(404).json({
+          message: 'not a valid connection request',
+        });
+      }
+      connectionRequest.status = status;
+      const data = await connectionRequest.save();
+      res.json({
+        message: 'Connection request' + status,
+        data,
+      });
+    } catch (err) {
+      res.status(400).send('ERR:' + err.message);
+    }
+  },
+);
 module.exports = requestRouter;

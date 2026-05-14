@@ -7,6 +7,7 @@ const app = express();
 const authRouter = require('./routes/auth');
 const requestRouter = require('./routes/requests');
 const profileRouter = require('./routes/profile');
+const userRouter = require('./routes/user');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -14,6 +15,7 @@ app.use(cookieParser());
 app.use('/', authRouter);
 app.use('/', requestRouter);
 app.use('/', profileRouter);
+app.use('/', userRouter);
 
 app.delete('/user', async (req, res) => {
   const userId = req.body._id;
