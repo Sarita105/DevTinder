@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const connectDB = require('./config/database');
 const User = require('./models/user');
 const cookieParser = require('cookie-parser');
@@ -9,6 +10,7 @@ const requestRouter = require('./routes/requests');
 const profileRouter = require('./routes/profile');
 const userRouter = require('./routes/user');
 
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
@@ -26,7 +28,7 @@ app.delete('/user', async (req, res) => {
     res.status(400).send('Something went wrong!');
   }
 });
-app.get('/feed', async (req, res) => {
+app.get('/user/feed', async (req, res) => {
   try {
     const users = await User.find({});
     res.send(users);
