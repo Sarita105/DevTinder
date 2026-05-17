@@ -25,7 +25,9 @@ profileRouter.patch('/profile/edit', authUserMiddleware, async (req, res) => {
     );
 
     await loggedinUser.save();
-    res.send(`${loggedinUser.firstName} , you profile has been updated!`);
+    res.send({message: `${loggedinUser.firstName} , you profile has been updated!`,
+      user:loggedinUser
+    });
   } catch (err) {
     res.status(400).send('Error editing user data:' + err.message);
   }
