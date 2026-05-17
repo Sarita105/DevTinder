@@ -6,7 +6,7 @@ const authUserMiddleware = async (req, res, next) => {
     const cookies = req.cookies;
     const { token } = cookies;
     if (!token) {
-      throw new Error('Invalid token!!');
+      res.status(401).send("Login again")
     }
     const { _id } = await jwt.verify(token, 'Dev@Tinder.777');
     const user = await User.findById(_id);
